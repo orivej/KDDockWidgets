@@ -222,21 +222,21 @@ else()
 endif()
 
 #Generate C/C++ CamelCase forwarding headers (only public includes)
-include(ECMGenerateHeaders)
-ecm_generate_headers(camelcase_HEADERS
-  ORIGINAL
-    CAMELCASE
-  HEADER_NAMES
-    Config
-    DockWidget
-    DockWidgetBase
-    FocusScope
-    FrameworkWidgetFactory,DefaultWidgetFactory
-    LayoutSaver
-    MainWindow
-    MainWindowBase
-    MainWindowMDI
-)
+#include(ECMGenerateHeaders)
+#ecm_generate_headers(camelcase_HEADERS
+#  ORIGINAL
+#    CAMELCASE
+#  HEADER_NAMES
+#    Config
+#    DockWidget
+#    DockWidgetBase
+#    FocusScope
+#    FrameworkWidgetFactory,DefaultWidgetFactory
+#    LayoutSaver
+#    MainWindow
+#    MainWindowBase
+#    MainWindowMDI
+#)
 
 set(RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/kddockwidgets_resources.qrc)
 
@@ -256,6 +256,7 @@ target_include_directories(kddockwidgets
   PUBLIC
     $<INSTALL_INTERFACE:${DOCKS_INCLUDES_INSTALL_PATH}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fwd_headers>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -294,7 +295,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR IS_CLANG_BUILD)
 endif()
 
 if(${PROJECT_NAME}_QTQUICK)
-  target_link_libraries(kddockwidgets PUBLIC Qt${Qt_VERSION_MAJOR}::Widgets Qt${Qt_VERSION_MAJOR}::Quick Qt${Qt_VERSION_MAJOR}::QuickControls2)
+  target_link_libraries(kddockwidgets PUBLIC Qt${Qt_VERSION_MAJOR}::Widgets Qt${Qt_VERSION_MAJOR}::Quick Qt${Qt_VERSION_MAJOR}::QuickControls2 PRIVATE Qt${Qt_VERSION_MAJOR}::GuiPrivate)
 else()
   target_link_libraries(kddockwidgets PUBLIC Qt${Qt_VERSION_MAJOR}::Widgets PRIVATE Qt${Qt_VERSION_MAJOR}::WidgetsPrivate)
 endif()

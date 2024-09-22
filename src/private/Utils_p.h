@@ -90,7 +90,17 @@ inline bool usesClientTitleBar()
 
 inline bool usesAeroSnapWithCustomDecos()
 {
-    return Config::self().flags() & Config::Flag_AeroSnapWithClientDecos;
+    //! NOTE: INTERNAL PATCH FOR MU4 ONLY
+    //!
+    //! The aero snap feature is not needed for panels/toolbars in MU4
+    //! but its implementation causes a lot of problem on Windows
+    //!
+    //! See:
+    //! https://github.com/musescore/MuseScore/issues/9821
+    //! https://github.com/musescore/MuseScore/issues/9818
+    return false;
+
+    //return Config::self().flags() & Config::Flag_AeroSnapWithClientDecos;
 }
 
 inline bool usesNativeDraggingAndResizing()
@@ -212,7 +222,13 @@ inline int startDragDistance()
 #ifdef KDDOCKWIDGETS_QTWIDGETS
     return QApplication::startDragDistance();
 #else
-    return 4;
+    //! NOTE: INTERNAL PATCH FOR MU4 ONLY
+    //!
+    //! Resolves the problem of unintended panel undocking
+    //!
+    //! See:
+    //! https://github.com/musescore/MuseScore/pull/16013
+    return 40;
 #endif
 }
 

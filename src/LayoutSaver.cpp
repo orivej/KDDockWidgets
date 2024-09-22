@@ -30,6 +30,7 @@
 #include "private/LayoutWidget_p.h"
 #include "private/Logging_p.h"
 #include "private/Position_p.h"
+#include "private/Utils_p.h"
 
 #include <qmath.h>
 #include <QDebug>
@@ -231,7 +232,7 @@ bool LayoutSaver::restoreLayout(const QByteArray &data)
                              d->m_affinityNames);
 
     // 1. Restore main windows
-    for (const LayoutSaver::MainWindow &mw : qAsConst(layout.mainWindows)) {
+    for (const LayoutSaver::MainWindow &mw : std::as_const(layout.mainWindows)) {
         MainWindowBase *mainWindow = d->m_dockRegistry->mainWindowByName(mw.uniqueName);
         if (!mainWindow) {
             if (auto mwFunc = Config::self().mainWindowFactoryFunc()) {
@@ -276,14 +277,14 @@ bool LayoutSaver::restoreLayout(const QByteArray &data)
     }
 
     // 3. Restore closed dock widgets. They remain closed but acquire geometry and placeholder properties
-    for (const auto &dw : qAsConst(layout.closedDockWidgets)) {
+    for (const auto &dw : std::as_const(layout.closedDockWidgets)) {
         if (d->matchesAffinity(dw->affinities)) {
             DockWidgetBase::deserialize(dw);
         }
     }
 
     // 4. Restore the placeholder info, now that the Items have been created
-    for (const auto &dw : qAsConst(layout.allDockWidgets)) {
+    for (const auto &dw : std::as_const(layout.allDockWidgets)) {
         if (!d->matchesAffinity(dw->affinities))
             continue;
 
@@ -339,10 +340,19 @@ void LayoutSaver::Private::deserializeWindowGeometry(const T &saved, QWidgetOrQu
     // Not simply calling QWidget::setGeometry() here.
     // For QtQuick we need to modify the QWindow's geometry.
 
+    QRect geometry = saved.geometry;
+    if (!isNormalWindowState(saved.windowState)) {
+        // The window will be maximized. We first set its geometry to normal
+        // Later it's maximized and will remember this value
+        geometry = saved.normalGeometry;
+    }
+
+    ::FloatingWindow::ensureRectIsOnScreen(geometry);
+
     if (topLevel->isWindow()) {
-        topLevel->setGeometry(saved.geometry);
+        topLevel->setGeometry(geometry);
     } else {
-        KDDockWidgets::Private::setTopLevelGeometry(saved.geometry, topLevel);
+        KDDockWidgets::Private::setTopLevelGeometry(geometry, topLevel);
     }
 
     topLevel->setVisible(saved.isVisible);
@@ -848,6 +858,7 @@ QVariantMap LayoutSaver::MainWindow::toVariantMap() const
     map.insert(QStringLiteral("multiSplitterLayout"), multiSplitterLayout.toVariantMap());
     map.insert(QStringLiteral("uniqueName"), uniqueName);
     map.insert(QStringLiteral("geometry"), Layouting::rectToMap(geometry));
+    map.insert(QStringLiteral("normalGeometry"), Layouting::rectToMap(normalGeometry));
     map.insert(QStringLiteral("screenIndex"), screenIndex);
     map.insert(QStringLiteral("screenSize"), Layouting::sizeToMap(screenSize));
     map.insert(QStringLiteral("isVisible"), isVisible);
@@ -869,6 +880,7 @@ void LayoutSaver::MainWindow::fromVariantMap(const QVariantMap &map)
     multiSplitterLayout.fromVariantMap(map.value(QStringLiteral("multiSplitterLayout")).toMap());
     uniqueName = map.value(QStringLiteral("uniqueName")).toString();
     geometry = Layouting::mapToRect(map.value(QStringLiteral("geometry")).toMap());
+    normalGeometry = Layouting::mapToRect(map.value(QStringLiteral("normalGeometry")).toMap());
     screenIndex = map.value(QStringLiteral("screenIndex")).toInt();
     screenSize = Layouting::mapToSize(map.value(QStringLiteral("screenSize")).toMap());
     isVisible = map.value(QStringLiteral("isVisible")).toBool();
